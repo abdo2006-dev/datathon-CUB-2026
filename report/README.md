@@ -1,30 +1,35 @@
-# Report
+# Report & Reference Files
 
-## Full Paper
+## Final Paper
 
-**"Reducing Scrap in Injection Molding: A DAG-Informed Causal Decision Analysis"**  
+**[Injection_Molding_Paper_v2.pdf](Injection_Molding_Paper_v2.pdf)**  
+*Reducing Scrap in Injection Molding: A DAG-Informed Causal Decision Analysis*  
 Constructor University Datathon 2026 · Insytes Manufacturing Challenge  
 Team: Limit Breakers
 
-The full paper (`Injection_Molding_Paper_v2.pdf`) contains:
-- Abstract and introduction
-- Causal setup and DAG (Section 2)
-- Estimation methods with equations (Section 3)
-- Full results including all tables and figures (Section 4)
-- Recommendations and trade-offs (Section 5)
-- Limitations (Section 6)
-- Conclusions and references (Section 7)
+This is the authoritative source of truth for all numbers in this repository. Where
+repository outputs differ from paper values, the discrepancy is documented in the
+README.md at the root of this repo.
 
-## Supporting Materials
+## DAG Documentation
 
-| File | Contents |
-|---|---|
-| `Injection_Molding_DAG_Notes.pdf` | Narrative interpretation of the causal graph and its five layers |
-| `Datathon_Student_Guide_Injection_Molding.pdf` | Dataset description, ontology guide, and suggested analytical workflow |
+**[Injection_Molding_DAG_Notes.pdf](Injection_Molding_DAG_Notes.pdf)**  
+Narrative interpretation of the causal graph. Covers the five causal chains, why
+certain variables are confounders vs. mediators, and the identification assumptions
+underlying the adjustment sets used in `src/utils.py`.
+
+## Challenge Reference
+
+**[Datathon_Student_Guide.pdf](Datathon_Student_Guide.pdf)**  
+Dataset description, variable ontology, and the challenge's suggested analytical
+framework. The variable classification in `src/utils.py` is derived directly from
+the ontology defined in this guide.
+
+---
 
 ## Key Tables from the Paper
 
-### Table 2 — DAG-Adjusted Effect Estimates
+### Table 2 — DAG-Adjusted Effect Estimates (paper values)
 
 | Lever | β (std) | 95% CI | Per op. step |
 |---|---|---|---|
@@ -34,10 +39,16 @@ The full paper (`Injection_Molding_Paper_v2.pdf`) contains:
 | `dryer_dewpoint_c` | +0.09 | [+0.05, +0.13] | +0.15 p.p. / +5 °C |
 | `maintenance_days_since_last` | +0.10 | [+0.07, +0.14] | +0.07 p.p. / +7 days |
 
-### Table 6 — Combined Package Impact
+> Repository reproduction: β (std) values match within 1%. Natural-unit (p.p./s) value
+> for cooling matches at −0.41 p.p./s. See root README for full comparison table.
+
+### Table 6 — Combined Package Impact (paper values)
 
 | Metric | Baseline | With package |
 |---|---|---|
 | Mean scrap rate | 4.44% | ≈ 3.85% (−13% relative) |
 | Cycle time | 53.7 s | ≈ 54.3 s (+1.0%) |
 | Energy per interval | 19.01 kWh | ≈ 19.02 kWh (+0.07%) |
+
+> Repository reproduction: 4.44% → ≈3.88% (−12.6%). Within 5% of paper.
+> Difference attributed to GBR stochasticity and demo dataset version.

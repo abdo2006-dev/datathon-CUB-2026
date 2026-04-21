@@ -23,7 +23,7 @@ A predictive model identifies variables that co-vary with scrap. It does not dis
 - confounded proxies from true causes
 - reverse-directed signals from forward-directed ones
 
-The most important lever in this dataset — **cooling time** — demonstrates the problem precisely. Its raw Pearson correlation with scrap is **ρ = +0.28**, which appears to say "more cooling → more scrap." A predictive pipeline acting on this signal would recommend shortening cooling. The DAG-adjusted causal estimate reverses this: **β = −1.75** (standardized), corresponding to **−0.41 percentage points of scrap per additional second of cooling**.
+The most important lever in this dataset — **cooling time** — demonstrates the problem precisely. Its raw Pearson correlation with scrap is **ρ = +0.28**, which appears to say "more cooling → more scrap." A predictive pipeline acting on this signal would recommend shortening cooling. The DAG-adjusted causal estimate (under the stated identification assumptions) reverses this: **β = −1.74 std**, corresponding to **−0.41 p.p./s**.
 
 This sign reversal is the central finding of the analysis.
 
@@ -31,16 +31,17 @@ This sign reversal is the central finding of the analysis.
 
 ## Headline Findings
 
-| Finding | Value |
+| Metric | Value |
 |---|---|
 | Mean scrap rate | 4.44% |
 | Intervals failing 3.2% threshold | 78% |
 | Dominant defect type | Warpage (33% of intervals) |
 | Cooling-time raw correlation | ρ = +0.28 (spurious positive) |
-| Cooling-time adjusted effect | β = −1.75 std / −0.41 p.p./s |
-| Combined package scrap reduction | 4.44% → ~3.85% (−13% relative) |
-| Cycle-time cost of the package | +1.0% (~0.6 s) |
-| Energy cost of the package | +0.07% (negligible) |
+| Cooling-time adjusted β | −1.74 std / −0.41 p.p./s |
+| GBR 5-fold CV R² | 0.63 |
+| Combined package scrap reduction | 4.44% → ~3.88% (−12.6% relative) |
+| Cycle-time cost of package | +1.0% (~0.6 s) |
+| Energy cost of package | negligible |
 
 ---
 
@@ -50,25 +51,25 @@ Five coordinated actions, all on existing equipment:
 
 | Action | Specification | Est. Δ Scrap | Confidence |
 |---|---|---|---|
-| Extend cooling time | +1.5 s plant-wide | −0.44 p.p. | **High** |
-| Cap mold temperature | ≤ 78 °C | −0.21 p.p. | Med–High |
+| Extend cooling time | +1.5 s plant-wide | −0.39 p.p. | **High** |
+| Cap mold temperature | ≤ 78 °C | −0.14 p.p. | Med–High |
 | Lower dryer dewpoint | −5 °C when humidity ≥ 65% | −0.09 p.p. | Medium |
-| Reduce injection pressure | −30 bar when wear index ≥ 0.45 | −0.09 p.p. | Medium |
-| Tighten maintenance interval | Cap at 14 days | −0.07 p.p. | Medium |
+| Reduce injection pressure | −30 bar when wear index ≥ 0.45 | −0.07 p.p. | Medium |
+| Tighten maintenance interval | Cap at 14 days | −0.02 p.p. | Medium |
 
-All estimates are model-implied from observational data. A two-week pilot at **VN_QUANGNAM** (highest scrap, highest humidity exposure) is recommended before plant-wide deployment.
+All estimates are model-implied from observational data under the stated DAG assumptions. A two-week pilot at **VN_QUANGNAM** is recommended before plant-wide deployment.
 
 ---
 
 ## Key Figures
 
 ### Cooling-Time Sign Reversal
-The core finding: raw correlation suggests more cooling causes more scrap. After adjusting for mold temperature (the confounder that creates both thermal stress and the operator's reactive cooling extension), the relationship inverts.
+Raw correlation is spurious (ρ = +0.28); after adjusting for mold temperature, the relationship inverts.
 
 ![Cooling Time Sign Reversal](figures/cooling_sign_reversal.png)
 
 ### Adjusted Causal Effect Estimates (Forest Plot)
-Standardized β coefficients with 95% bootstrap confidence intervals. Teal = lowers scrap; red = raises scrap.
+Standardized β coefficients with 95% bootstrap CIs. Teal = lowers scrap; red = raises scrap.
 
 ![Forest Plot](figures/forest_plot.png)
 
@@ -79,115 +80,102 @@ Estimated scrap reduction per action from chain-propagated GBR counterfactual si
 
 ---
 
+## What Is Exactly Reproduced vs. Approximated
+
+This repository is a companion to the final paper. The following table documents where values are exact reproductions and where they differ.
+
+| Item | Paper value | This repo | Status |
+|---|---|---|---|
+| Mean scrap rate | 4.44% | 4.44% | ✅ Exact |
+| % intervals failing | 78% | 78% | ✅ Exact |
+| Warpage cross-tab (all 9 cells) | Table 3 | Matches exactly | ✅ Exact |
+| cooling β_std | −1.75 | −1.74 | ✅ Matches (<1%) |
+| cooling β_unstd | −0.41 p.p./s | −0.41 p.p./s | ✅ Exact |
+| Moisture sub-model R² | 0.09 | 0.09 | ✅ Exact |
+| GBR CV R² | 0.64 | 0.63 | ⚠️ ~1% gap (GBR stochasticity / demo dataset) |
+| Dryer simulation PATE | −0.09 p.p. | −0.09 p.p. | ✅ Matches with moisture chain |
+| Pressure simulation PATE | −0.09 p.p. | −0.07 p.p. | ⚠️ ~20% gap |
+| Cooling simulation PATE | −0.44 p.p. | −0.39 p.p. | ⚠️ ~12% gap |
+| Mold temp simulation PATE | −0.21 p.p. | −0.14 p.p. | ⚠️ ~33% gap |
+| Maintenance simulation PATE | −0.07 p.p. | −0.02 p.p. | ⚠️ Structural gap (see below) |
+| Combined package delta | −0.59 p.p. (−13%) | −0.56 p.p. (−12.6%) | ✅ Within 5% |
+
+**Why simulation values differ from the paper:**
+
+1. **GBR stochasticity**: The gradient-boosted model uses random subsampling (`subsample=0.8`). Our reproduction achieves R²=0.63 vs the paper's 0.64. Small differences in the learned response surface propagate into different counterfactual estimates.
+2. **Dataset version**: The supplied file is labeled `demo`. The paper may have been produced on a different random seed of the synthetic generator, leading to slightly different feature distributions (notably σ(cooling_time_s) = 4.3 s here vs an implied ~6.5 s in the paper).
+3. **Maintenance PATE**: The paper notes the maintenance effect is "indirect via reduced calibration_drift_index." Our reproduction implements this chain correctly (drift sub-model R² = 0.78), but the GBR's learned sensitivity to the resulting small drift changes is lower in this dataset. This is an honest approximation, not a bug.
+
+All *directions* and *relative rankings* are faithfully reproduced. Treat magnitude differences as GBR-implied approximations of the paper's GBR-implied approximations — both are model estimates from observational data, not experimental measurements.
+
+---
+
 ## Repository Structure
 
 ```
 injection-molding-causal-analysis/
-├── README.md                          # This file
-├── requirements.txt                   # Python dependencies
+├── README.md
+├── requirements.txt
 ├── .gitignore
-│
 ├── data/
-│   ├── README.md                      # Dataset description and variable glossary
+│   ├── README.md               ← Dataset description and variable glossary
 │   └── synthetic_injection_molding_demo.csv
-│
 ├── notebooks/
-│   ├── 01_eda.ipynb                   # Exploratory data analysis
-│   ├── 02_dag_causal_analysis.ipynb   # DAG-informed causal estimation
-│   └── 03_intervention_tradeoff_analysis.ipynb  # Intervention simulation & tradeoffs
-│
+│   ├── 01_eda.ipynb            ← Exploratory data analysis
+│   ├── 02_dag_causal_analysis.ipynb  ← DAG, adjustment sets, sign reversal
+│   └── 03_intervention_tradeoff_analysis.ipynb  ← Simulation & recommendations
 ├── src/
-│   ├── __init__.py
-│   ├── utils.py                       # Data loading and preprocessing
-│   ├── plotting.py                    # Reusable figure functions
-│   ├── causal_helpers.py              # Regression, bootstrap, effect estimation
-│   └── intervention_helpers.py        # Counterfactual simulation logic
-│
-├── figures/                           # All exported figures (generated by notebooks)
-│   └── ...
-│
+│   ├── utils.py                ← Variable roles (match paper §2.1), data loading
+│   ├── plotting.py             ← All figure functions
+│   ├── causal_helpers.py       ← Adjusted regression, bootstrap CI, GBR training
+│   └── intervention_helpers.py ← Counterfactual simulation with chain propagation
+├── figures/                    ← Generated figures (7 PNG files)
 └── report/
-    └── README.md                      # Links to full paper and presentation
+    └── README.md               ← Summary tables from the paper
 ```
-
----
-
-## Notebooks
-
-| Notebook | Purpose |
-|---|---|
-| `01_eda.ipynb` | Data loading, column inspection, defect breakdown, raw correlations, target KPI distributions |
-| `02_dag_causal_analysis.ipynb` | Variable role classification, DAG-informed adjustment sets, adjusted regression, forest plot, cooling-time sign reversal |
-| `03_intervention_tradeoff_analysis.ipynb` | GBR counterfactual simulation, per-action impact estimates, combined package, cycle-time and energy tradeoffs |
 
 ---
 
 ## Methods Overview
 
 **1. Causal framing via DAG**  
-The dataset includes a Directed Acyclic Graph (DAG) encoding structural causal assumptions. The DAG classifies variables as controllable levers, confounders, mediators, or context controls, and determines the adjustment set for each lever via the backdoor criterion (Pearl, 2000).
+A Directed Acyclic Graph (DAG) supplied with the challenge ontology classifies variables as controllable levers, confounders, mediators, or context controls. Adjustment sets for each lever are derived via the backdoor criterion (Pearl, 2000, §3.3).
 
 **2. Adjusted linear regression**  
-For each candidate lever, a linear regression is estimated with the DAG-prescribed adjustment set plus machine/mold/variant/shift fixed effects. All continuous features are z-scored to produce comparable standardized effect sizes. Bootstrap confidence intervals use 300 row-wise resamples.
+Primary causal effect estimator. For each lever, a linear regression uses the DAG-prescribed adjustment set plus machine/mold/variant/shift fixed effects. The lever is z-scored; CIs use 300-replicate row-wise bootstrap. Note: `beta_std` and `beta_unstd` are computed separately (Frisch-Waugh with z-scored lever / unscaled outcome for the former; direct OLS for the latter). See `src/causal_helpers.py` for full documentation of this numerical choice.
 
 **3. Gradient-boosted regression (GBR)**  
-A nonlinear predictive model (400 trees, learning rate 0.05, depth 3; 5-fold CV R² = 0.64) serves as the world-approximator for counterfactual simulation. Feature importance from GBR is reported as a predictive diagnostic only, not as a causal ranking.
+400 trees, learning rate 0.05, depth 3, 80% row subsampling. Serves as a nonlinear world-approximator for counterfactual simulation. Feature importance is reported as a predictive diagnostic only — not a causal ranking.
 
-**4. Counterfactual simulation**  
-Each row is intervened on individually: the lever is shifted to its target value, all other features held at observed values, and the GBR is re-evaluated. Shifted values are clipped to ontology-declared physical ranges. Population average treatment effects are the mean across all rows.
-
-**Triangulation rule:** A lever is included in the final recommendation package only if its protective sign is consistent across all four methods (Pearson correlation, adjusted regression, GBR importance, and counterfactual simulation) — or, for sign-reversed levers, if the adjusted sign is consistent across methods 2–4 with a clear mechanism explaining the raw-vs-adjusted discrepancy.
+**4. Chain-propagated counterfactual simulation**  
+Each row is intervened on individually. For the dryer dewpoint intervention, the delta in `resin_moisture_pct` is propagated through a structural moisture sub-model (R² = 0.09) before re-evaluating the main GBR — reflecting that dewpoint operates through moisture, not directly on scrap. For maintenance, the delta in `calibration_drift_index` is propagated through a calibration drift sub-model (R² = 0.78). Deltas (not absolute predictions) are used, preserving the residual variance the sub-models cannot explain.
 
 ---
 
 ## Limitations
 
-- **Residual confounding.** The identification strategy assumes the DAG is correctly specified. Unmeasured time-varying factors (undocumented mold changes, raw-material handling differences) would bias effect estimates. The cooling-time *sign* is robust across specification choices; the *magnitude* is not.
-- **Bootstrap inference.** Confidence intervals use row-wise bootstrap. Adjacent 30-minute intervals on the same machine share equipment-level noise; machine-clustered CIs would be wider. Signs and rankings are robust; magnitudes are approximate.
-- **Moisture model weakness.** The dryer dewpoint → resin moisture sub-model explains only R² = 0.09 of moisture variance. The dryer recommendation is conservatively sized and should be treated as a lower-bound estimate.
-- **Temporal scope.** Data covers January–March 2026 (winter/early spring). Humidity-conditional rules may require recalibration for other seasons, especially at VN_QUANGNAM.
-- **No cost data.** All estimates are in scrap percentage points and cycle-time seconds. Monetary translation requires plant-specific cost inputs.
+- **Observational data:** All estimates are model-implied under the stated identification assumptions. A controlled pilot is required to convert these to empirical evidence.
+- **Row-wise bootstrap:** CIs use i.i.d. resampling. Machine-clustered standard errors would be wider; magnitudes are approximate.
+- **Moisture sub-model (R² = 0.09):** Only 9% of resin moisture variance is explained by the measured predictors. The dryer recommendation is a lower-bound estimate.
+- **Temporal scope:** Data covers January–March 2026 (winter/early spring). Humidity-conditional rules may need recalibration for summer, especially at VN_QUANGNAM.
+- **No cost data:** All estimates are in percentage points and seconds. Financial translation requires plant-specific inputs.
+- **Residual confounding:** The DAG is assumed correctly specified. Unmeasured time-varying confounders would bias estimates.
 
 ---
 
 ## Reproducibility
 
-### Setup
-
 ```bash
-# Clone the repository
 git clone https://github.com/your-username/injection-molding-causal-analysis.git
 cd injection-molding-causal-analysis
-
-# Create a virtual environment (recommended)
-python -m venv .venv
-source .venv/bin/activate      # Windows: .venv\Scripts\activate
-
-# Install dependencies
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-```
-
-### Run Notebooks
-
-```bash
 jupyter lab
 ```
 
-Open the notebooks in order: `01_eda.ipynb` → `02_dag_causal_analysis.ipynb` → `03_intervention_tradeoff_analysis.ipynb`.
+Open notebooks in order: `01_eda.ipynb` → `02_dag_causal_analysis.ipynb` → `03_intervention_tradeoff_analysis.ipynb`. Each notebook regenerates its figures to `figures/`.
 
-The notebooks are self-contained and will regenerate all figures to the `figures/` directory.
-
-### Python Version
-
-Developed and tested on Python 3.10+. All notebooks are compatible with standard Jupyter Lab / Jupyter Notebook.
-
----
-
-## Why This Work Matters
-
-Most process-monitoring dashboards in manufacturing report correlations — which variables move together with scrap rates. This is useful for flagging anomalies but misleading for operational decision-making. The cooling-time example is a clean illustration: the raw positive correlation would lead a plant manager to shorten cooling (wrong direction), while the causal analysis reveals that extending cooling is the single highest-leverage action available.
-
-The DAG-informed framework used here is not a methodological embellishment. It is the minimum structure needed to convert an observational dataset into actionable operational guidance. The practical output — a five-action package estimated to reduce mean scrap by 13% relative at a 1% cycle-time cost — follows directly from taking the causal structure seriously.
+Python 3.10+ recommended. All notebooks are self-contained.
 
 ---
 

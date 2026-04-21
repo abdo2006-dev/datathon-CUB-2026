@@ -1,0 +1,804 @@
+{
+  "dataset_name": "synthetic_injection_molding_demo",
+  "domain_description": "Synthetic but realistic injection molding production intervals for demonstrating causal discovery, root-cause analysis, and counterfactual simulation in a manufacturing context.",
+  "row_granularity": "One row equals one 30-minute production interval for one machine, one mold, one product variant, and one resin lot.",
+  "target_variable": "scrap_rate_pct",
+  "primary_business_question": "What operational, environmental, material, and tooling factors are causing scrap in injection molding, and which controllable levers reduce it most effectively?",
+  "key_causal_pathways": [
+    "ambient_humidity_pct -> dryer_dewpoint_c -> resin_moisture_pct -> defect_type=splay_moisture -> scrap_rate_pct",
+    "mold_temperature_c + cooling_time_s -> warpage risk -> scrap_rate_pct",
+    "maintenance_days_since_last -> calibration_drift_index -> process instability -> scrap_rate_pct",
+    "tool_wear_index + injection_pressure_bar + clamp_force_kn -> flash risk -> scrap_rate_pct",
+    "resin_batch_quality_index + barrel_temperature_c + injection_pressure_bar -> short_shot risk -> scrap_rate_pct",
+    "operator_shift -> calibration_drift_index / operator_experience_level -> cooling_time_s and stability -> scrap_rate_pct"
+  ],
+  "suggested_demo_questions": [
+    "What are the top causal drivers of scrap_rate_pct?",
+    "Why does scrap increase during humid intervals?",
+    "How much would scrap change if dryer_dewpoint_c were kept below -38 degC?",
+    "What is the expected effect of increasing cooling_time_s by 1.5 seconds on warpage-heavy variants?",
+    "Does maintenance_days_since_last affect scrap directly or mainly through calibration drift?",
+    "Which machines are more sensitive to tool wear and high pressure?",
+    "How do resin moisture and mold temperature interact?",
+    "What changes reduce scrap without sharply increasing cycle time or energy?"
+  ],
+  "column_metadata": [
+    {
+      "name": "timestamp",
+      "human_readable_label": "Timestamp",
+      "description": "Start time of the 30-minute production interval.",
+      "data_type": "datetime",
+      "unit": "ISO-8601",
+      "allowed_range_or_categories": null,
+      "role": "identifier",
+      "likely_causal_parents": [],
+      "likely_downstream_effects": [
+        "operator_shift",
+        "ambient_temperature_c",
+        "ambient_humidity_pct",
+        "tool_wear_index"
+      ],
+      "variable_type": "datetime",
+      "suitable_for_counterfactual_intervention": false
+    },
+    {
+      "name": "plant_id",
+      "human_readable_label": "Plant",
+      "description": "Production site identifier.",
+      "data_type": "string",
+      "unit": null,
+      "allowed_range_or_categories": [
+        "DE_WINNENDEN",
+        "DE_OBERSONT",
+        "RO_CURTEA",
+        "VN_QUANGNAM"
+      ],
+      "role": "identifier",
+      "likely_causal_parents": [],
+      "likely_downstream_effects": [
+        "machine_id",
+        "ambient_temperature_c",
+        "ambient_humidity_pct",
+        "energy_kwh_interval"
+      ],
+      "variable_type": "categorical",
+      "suitable_for_counterfactual_intervention": false
+    },
+    {
+      "name": "machine_id",
+      "human_readable_label": "Injection Molding Machine",
+      "description": "Machine identifier.",
+      "data_type": "string",
+      "unit": null,
+      "allowed_range_or_categories": [
+        "DEN_IM_01",
+        "DEN_IM_02",
+        "DEN_IM_03",
+        "DEN_IM_04",
+        "DEN_IM_05",
+        "ONT_IM_01",
+        "ONT_IM_02",
+        "ONT_IM_03",
+        "TEA_IM_01",
+        "TEA_IM_02",
+        "NAM_IM_01",
+        "NAM_IM_02"
+      ],
+      "role": "identifier",
+      "likely_causal_parents": [
+        "plant_id"
+      ],
+      "likely_downstream_effects": [
+        "clamp_force_kn",
+        "cycle_time_s",
+        "energy_kwh_interval",
+        "scrap_rate_pct"
+      ],
+      "variable_type": "categorical",
+      "suitable_for_counterfactual_intervention": false
+    },
+    {
+      "name": "mold_id",
+      "human_readable_label": "Mold",
+      "description": "Mold/tool identifier used in the interval.",
+      "data_type": "string",
+      "unit": null,
+      "allowed_range_or_categories": [
+        "MLD_001",
+        "MLD_002",
+        "MLD_003",
+        "MLD_004",
+        "MLD_005",
+        "MLD_006",
+        "MLD_007",
+        "MLD_008",
+        "MLD_009",
+        "MLD_010",
+        "MLD_011",
+        "MLD_012",
+        "MLD_013",
+        "MLD_014",
+        "MLD_015",
+        "MLD_016",
+        "MLD_017",
+        "MLD_018"
+      ],
+      "role": "identifier",
+      "likely_causal_parents": [
+        "machine_id"
+      ],
+      "likely_downstream_effects": [
+        "tool_wear_index",
+        "cavity_count",
+        "defect_type",
+        "scrap_rate_pct"
+      ],
+      "variable_type": "categorical",
+      "suitable_for_counterfactual_intervention": false
+    },
+    {
+      "name": "product_variant",
+      "human_readable_label": "Product Variant",
+      "description": "Manufactured product variant / part family.",
+      "data_type": "string",
+      "unit": null,
+      "allowed_range_or_categories": [
+        "V_HOUSING_A",
+        "V_HOUSING_B",
+        "V_NOZZLE_C",
+        "V_PUMP_CAP_D",
+        "V_HANDLE_E",
+        "V_CONNECTOR_F",
+        "V_FILTER_FRAME_G",
+        "V_COVER_H"
+      ],
+      "role": "control",
+      "likely_causal_parents": [],
+      "likely_downstream_effects": [
+        "part_weight_g",
+        "cycle_time_s",
+        "scrap_rate_pct",
+        "energy_kwh_interval"
+      ],
+      "variable_type": "categorical",
+      "suitable_for_counterfactual_intervention": false
+    },
+    {
+      "name": "resin_lot_id",
+      "human_readable_label": "Resin Lot",
+      "description": "Material batch identifier for polymer pellets.",
+      "data_type": "string",
+      "unit": null,
+      "allowed_range_or_categories": "LOT_0001..LOT_0120",
+      "role": "identifier",
+      "likely_causal_parents": [],
+      "likely_downstream_effects": [
+        "resin_batch_quality_index",
+        "resin_moisture_pct",
+        "scrap_rate_pct"
+      ],
+      "variable_type": "categorical",
+      "suitable_for_counterfactual_intervention": false
+    },
+    {
+      "name": "operator_shift",
+      "human_readable_label": "Operator Shift",
+      "description": "Operating shift for the interval.",
+      "data_type": "string",
+      "unit": null,
+      "allowed_range_or_categories": [
+        "A_Day",
+        "B_Evening",
+        "C_Night"
+      ],
+      "role": "confounder",
+      "likely_causal_parents": [
+        "timestamp"
+      ],
+      "likely_downstream_effects": [
+        "operator_experience_level",
+        "calibration_drift_index",
+        "scrap_rate_pct"
+      ],
+      "variable_type": "categorical",
+      "suitable_for_counterfactual_intervention": false
+    },
+    {
+      "name": "operator_experience_level",
+      "human_readable_label": "Operator Experience Level",
+      "description": "Ordinal proxy for operator familiarity and setup stability.",
+      "data_type": "integer",
+      "unit": "1-7 scale",
+      "allowed_range_or_categories": [
+        1,
+        7
+      ],
+      "role": "feature",
+      "likely_causal_parents": [
+        "operator_shift"
+      ],
+      "likely_downstream_effects": [
+        "cooling_time_s",
+        "scrap_rate_pct"
+      ],
+      "variable_type": "ordinal",
+      "suitable_for_counterfactual_intervention": false
+    },
+    {
+      "name": "ambient_temperature_c",
+      "human_readable_label": "Ambient Temperature",
+      "description": "Hall air temperature around the machine.",
+      "data_type": "float",
+      "unit": "degC",
+      "allowed_range_or_categories": [
+        17,
+        34
+      ],
+      "role": "feature",
+      "likely_causal_parents": [
+        "plant_id",
+        "timestamp"
+      ],
+      "likely_downstream_effects": [
+        "mold_temperature_c",
+        "energy_kwh_interval"
+      ],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": false
+    },
+    {
+      "name": "ambient_humidity_pct",
+      "human_readable_label": "Ambient Relative Humidity",
+      "description": "Relative humidity in the molding environment.",
+      "data_type": "float",
+      "unit": "percent",
+      "allowed_range_or_categories": [
+        30,
+        88
+      ],
+      "role": "confounder",
+      "likely_causal_parents": [
+        "plant_id",
+        "timestamp",
+        "operator_shift"
+      ],
+      "likely_downstream_effects": [
+        "dryer_dewpoint_c",
+        "resin_moisture_pct",
+        "scrap_rate_pct"
+      ],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": true
+    },
+    {
+      "name": "dryer_dewpoint_c",
+      "human_readable_label": "Dryer Dew Point",
+      "description": "Drying air dew point, proxy for dryer effectiveness.",
+      "data_type": "float",
+      "unit": "degC",
+      "allowed_range_or_categories": [
+        -48,
+        -18
+      ],
+      "role": "mediator",
+      "likely_causal_parents": [
+        "ambient_humidity_pct",
+        "maintenance_days_since_last"
+      ],
+      "likely_downstream_effects": [
+        "resin_moisture_pct",
+        "scrap_rate_pct"
+      ],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": true
+    },
+    {
+      "name": "resin_moisture_pct",
+      "human_readable_label": "Resin Moisture",
+      "description": "Estimated moisture content of resin during molding.",
+      "data_type": "float",
+      "unit": "percent",
+      "allowed_range_or_categories": [
+        0.005,
+        0.3
+      ],
+      "role": "mediator",
+      "likely_causal_parents": [
+        "resin_lot_id",
+        "ambient_humidity_pct",
+        "dryer_dewpoint_c"
+      ],
+      "likely_downstream_effects": [
+        "defect_type",
+        "scrap_rate_pct"
+      ],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": true
+    },
+    {
+      "name": "resin_batch_quality_index",
+      "human_readable_label": "Resin Batch Quality Index",
+      "description": "Normalized quality indicator for batch consistency and purity.",
+      "data_type": "float",
+      "unit": "index",
+      "allowed_range_or_categories": [
+        0.75,
+        1.05
+      ],
+      "role": "feature",
+      "likely_causal_parents": [
+        "resin_lot_id"
+      ],
+      "likely_downstream_effects": [
+        "short_shot",
+        "scrap_rate_pct"
+      ],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": false
+    },
+    {
+      "name": "barrel_temperature_c",
+      "human_readable_label": "Barrel Temperature",
+      "description": "Melt temperature setting of the barrel zones.",
+      "data_type": "float",
+      "unit": "degC",
+      "allowed_range_or_categories": [
+        195,
+        290
+      ],
+      "role": "feature",
+      "likely_causal_parents": [
+        "product_variant",
+        "calibration_drift_index"
+      ],
+      "likely_downstream_effects": [
+        "flowability",
+        "burn_mark",
+        "short_shot",
+        "scrap_rate_pct"
+      ],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": true
+    },
+    {
+      "name": "mold_temperature_c",
+      "human_readable_label": "Mold Temperature",
+      "description": "Average mold surface temperature.",
+      "data_type": "float",
+      "unit": "degC",
+      "allowed_range_or_categories": [
+        35,
+        95
+      ],
+      "role": "feature",
+      "likely_causal_parents": [
+        "product_variant",
+        "ambient_temperature_c"
+      ],
+      "likely_downstream_effects": [
+        "cooling_time_s",
+        "warpage",
+        "scrap_rate_pct"
+      ],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": true
+    },
+    {
+      "name": "injection_pressure_bar",
+      "human_readable_label": "Injection Pressure",
+      "description": "Peak injection pressure during fill.",
+      "data_type": "float",
+      "unit": "bar",
+      "allowed_range_or_categories": [
+        450,
+        1700
+      ],
+      "role": "feature",
+      "likely_causal_parents": [
+        "product_variant",
+        "calibration_drift_index"
+      ],
+      "likely_downstream_effects": [
+        "flash",
+        "short_shot",
+        "scrap_rate_pct"
+      ],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": true
+    },
+    {
+      "name": "hold_pressure_bar",
+      "human_readable_label": "Hold Pressure",
+      "description": "Packing/holding pressure after fill.",
+      "data_type": "float",
+      "unit": "bar",
+      "allowed_range_or_categories": [
+        300,
+        1200
+      ],
+      "role": "feature",
+      "likely_causal_parents": [
+        "injection_pressure_bar"
+      ],
+      "likely_downstream_effects": [
+        "sink_mark",
+        "dimensional_deviation",
+        "scrap_rate_pct"
+      ],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": true
+    },
+    {
+      "name": "screw_speed_rpm",
+      "human_readable_label": "Screw Speed",
+      "description": "Plasticizing screw speed.",
+      "data_type": "float",
+      "unit": "rpm",
+      "allowed_range_or_categories": [
+        20,
+        120
+      ],
+      "role": "feature",
+      "likely_causal_parents": [
+        "product_variant"
+      ],
+      "likely_downstream_effects": [
+        "burn_mark",
+        "material_homogeneity",
+        "scrap_rate_pct"
+      ],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": true
+    },
+    {
+      "name": "cooling_time_s",
+      "human_readable_label": "Cooling Time",
+      "description": "Cooling duration before ejection.",
+      "data_type": "float",
+      "unit": "seconds",
+      "allowed_range_or_categories": [
+        6,
+        34
+      ],
+      "role": "feature",
+      "likely_causal_parents": [
+        "product_variant",
+        "mold_temperature_c",
+        "operator_experience_level"
+      ],
+      "likely_downstream_effects": [
+        "cycle_time_s",
+        "warpage",
+        "scrap_rate_pct"
+      ],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": true
+    },
+    {
+      "name": "cycle_time_s",
+      "human_readable_label": "Cycle Time",
+      "description": "Total molding cycle time for one shot.",
+      "data_type": "float",
+      "unit": "seconds",
+      "allowed_range_or_categories": [
+        16,
+        95
+      ],
+      "role": "feature",
+      "likely_causal_parents": [
+        "cooling_time_s",
+        "shot_size_g",
+        "calibration_drift_index",
+        "product_variant"
+      ],
+      "likely_downstream_effects": [
+        "parts_produced",
+        "energy_kwh_interval"
+      ],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": true
+    },
+    {
+      "name": "clamp_force_kn",
+      "human_readable_label": "Clamp Force",
+      "description": "Available machine clamping force during run.",
+      "data_type": "float",
+      "unit": "kN",
+      "allowed_range_or_categories": [
+        1600,
+        4400
+      ],
+      "role": "feature",
+      "likely_causal_parents": [
+        "machine_id"
+      ],
+      "likely_downstream_effects": [
+        "flash",
+        "scrap_rate_pct"
+      ],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": false
+    },
+    {
+      "name": "shot_size_g",
+      "human_readable_label": "Shot Size",
+      "description": "Total material injected per shot.",
+      "data_type": "float",
+      "unit": "grams",
+      "allowed_range_or_categories": [
+        10,
+        1800
+      ],
+      "role": "feature",
+      "likely_causal_parents": [
+        "product_variant",
+        "cavity_count"
+      ],
+      "likely_downstream_effects": [
+        "cycle_time_s",
+        "energy_kwh_interval",
+        "flash",
+        "short_shot"
+      ],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": true
+    },
+    {
+      "name": "maintenance_days_since_last",
+      "human_readable_label": "Days Since Last Maintenance",
+      "description": "Elapsed days since maintenance/calibration.",
+      "data_type": "integer",
+      "unit": "days",
+      "allowed_range_or_categories": [
+        0,
+        60
+      ],
+      "role": "confounder",
+      "likely_causal_parents": [
+        "machine_id",
+        "timestamp"
+      ],
+      "likely_downstream_effects": [
+        "calibration_drift_index",
+        "dryer_dewpoint_c",
+        "scrap_rate_pct"
+      ],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": true
+    },
+    {
+      "name": "calibration_drift_index",
+      "human_readable_label": "Calibration Drift Index",
+      "description": "Normalized proxy for process drift and instability.",
+      "data_type": "float",
+      "unit": "index",
+      "allowed_range_or_categories": [
+        0,
+        1
+      ],
+      "role": "mediator",
+      "likely_causal_parents": [
+        "maintenance_days_since_last",
+        "operator_shift",
+        "machine_id"
+      ],
+      "likely_downstream_effects": [
+        "barrel_temperature_c",
+        "injection_pressure_bar",
+        "defect_type",
+        "scrap_rate_pct"
+      ],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": true
+    },
+    {
+      "name": "tool_wear_index",
+      "human_readable_label": "Tool Wear Index",
+      "description": "Normalized proxy for mold wear and misalignment.",
+      "data_type": "float",
+      "unit": "index",
+      "allowed_range_or_categories": [
+        0,
+        1
+      ],
+      "role": "mediator",
+      "likely_causal_parents": [
+        "mold_id",
+        "timestamp",
+        "cavity_count"
+      ],
+      "likely_downstream_effects": [
+        "flash",
+        "dimensional_deviation",
+        "scrap_rate_pct"
+      ],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": false
+    },
+    {
+      "name": "cavity_count",
+      "human_readable_label": "Cavity Count",
+      "description": "Number of cavities in the mold.",
+      "data_type": "integer",
+      "unit": "count",
+      "allowed_range_or_categories": [
+        1,
+        8
+      ],
+      "role": "control",
+      "likely_causal_parents": [
+        "mold_id"
+      ],
+      "likely_downstream_effects": [
+        "shot_size_g",
+        "parts_produced",
+        "energy_kwh_interval"
+      ],
+      "variable_type": "ordinal",
+      "suitable_for_counterfactual_intervention": false
+    },
+    {
+      "name": "part_weight_g",
+      "human_readable_label": "Part Weight",
+      "description": "Nominal part weight per cavity.",
+      "data_type": "float",
+      "unit": "grams",
+      "allowed_range_or_categories": [
+        15,
+        230
+      ],
+      "role": "control",
+      "likely_causal_parents": [
+        "product_variant"
+      ],
+      "likely_downstream_effects": [
+        "shot_size_g",
+        "cycle_time_s",
+        "energy_kwh_interval"
+      ],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": false
+    },
+    {
+      "name": "parts_produced",
+      "human_readable_label": "Parts Produced",
+      "description": "Good + scrap units produced in the interval.",
+      "data_type": "integer",
+      "unit": "count",
+      "allowed_range_or_categories": [
+        10,
+        800
+      ],
+      "role": "target_support",
+      "likely_causal_parents": [
+        "cycle_time_s",
+        "cavity_count"
+      ],
+      "likely_downstream_effects": [
+        "scrap_count"
+      ],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": false
+    },
+    {
+      "name": "energy_kwh_interval",
+      "human_readable_label": "Energy Use per Interval",
+      "description": "Electrical energy consumed during the 30-minute interval.",
+      "data_type": "float",
+      "unit": "kWh",
+      "allowed_range_or_categories": [
+        5,
+        28
+      ],
+      "role": "target_support",
+      "likely_causal_parents": [
+        "cycle_time_s",
+        "shot_size_g",
+        "ambient_humidity_pct",
+        "machine_id",
+        "barrel_temperature_c"
+      ],
+      "likely_downstream_effects": [],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": true
+    },
+    {
+      "name": "defect_type",
+      "human_readable_label": "Dominant Defect Type",
+      "description": "Most likely dominant defect mode for the interval.",
+      "data_type": "string",
+      "unit": null,
+      "allowed_range_or_categories": [
+        "none",
+        "splay_moisture",
+        "warpage",
+        "flash",
+        "short_shot",
+        "sink_mark",
+        "dimensional_deviation",
+        "burn_mark"
+      ],
+      "role": "target_support",
+      "likely_causal_parents": [
+        "resin_moisture_pct",
+        "mold_temperature_c",
+        "cooling_time_s",
+        "injection_pressure_bar",
+        "tool_wear_index",
+        "calibration_drift_index"
+      ],
+      "likely_downstream_effects": [
+        "scrap_count",
+        "scrap_rate_pct"
+      ],
+      "variable_type": "categorical",
+      "suitable_for_counterfactual_intervention": false
+    },
+    {
+      "name": "scrap_count",
+      "human_readable_label": "Scrap Count",
+      "description": "Number of scrapped parts in the interval.",
+      "data_type": "integer",
+      "unit": "count",
+      "allowed_range_or_categories": [
+        0,
+        100
+      ],
+      "role": "target_support",
+      "likely_causal_parents": [
+        "parts_produced",
+        "defect_type",
+        "scrap_rate_pct"
+      ],
+      "likely_downstream_effects": [],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": false
+    },
+    {
+      "name": "scrap_rate_pct",
+      "human_readable_label": "Scrap Rate",
+      "description": "Percentage of produced parts scrapped in the interval. Primary target.",
+      "data_type": "float",
+      "unit": "percent",
+      "allowed_range_or_categories": [
+        0,
+        10
+      ],
+      "role": "target",
+      "likely_causal_parents": [
+        "ambient_humidity_pct",
+        "dryer_dewpoint_c",
+        "resin_moisture_pct",
+        "mold_temperature_c",
+        "cooling_time_s",
+        "injection_pressure_bar",
+        "hold_pressure_bar",
+        "calibration_drift_index",
+        "tool_wear_index"
+      ],
+      "likely_downstream_effects": [
+        "pass_fail_flag"
+      ],
+      "variable_type": "continuous",
+      "suitable_for_counterfactual_intervention": false
+    },
+    {
+      "name": "pass_fail_flag",
+      "human_readable_label": "Pass / Fail Flag",
+      "description": "Binary indicator where 1 means interval scrap was within acceptable threshold.",
+      "data_type": "integer",
+      "unit": "0/1",
+      "allowed_range_or_categories": [
+        0,
+        1
+      ],
+      "role": "target_support",
+      "likely_causal_parents": [
+        "scrap_rate_pct"
+      ],
+      "likely_downstream_effects": [],
+      "variable_type": "binary",
+      "suitable_for_counterfactual_intervention": false
+    }
+  ]
+}

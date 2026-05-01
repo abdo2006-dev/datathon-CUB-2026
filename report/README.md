@@ -2,7 +2,7 @@
 
 ## Final Paper
 
-**[Injection_Molding_Paper_v2.pdf](Injection_Molding_Paper_v2.pdf)**  
+**[Injection_Molding_Paper_v3_Final.pdf](Injection_Molding_Paper_v3_Final.pdf)**  
 *Reducing Scrap in Injection Molding: A DAG-Informed Causal Decision Analysis*  
 Constructor University Datathon 2026 · Insytes Manufacturing Challenge  
 Team: Limit Breakers

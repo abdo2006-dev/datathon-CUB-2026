@@ -37,9 +37,9 @@ This sign reversal is the central finding of the analysis.
 | Intervals failing 3.2% threshold | 78% |
 | Dominant defect type | Warpage (33% of intervals) |
 | Cooling-time raw correlation | ρ = +0.28 (spurious positive) |
-| Cooling-time adjusted β | −1.74 std / −0.41 p.p./s |
-| GBR 5-fold CV R² | 0.63 |
-| Combined package scrap reduction | 4.44% → ~3.88% (−12.6% relative) |
+| Cooling-time adjusted β | −1.75 std / −0.41 p.p./s |
+| GBR 5-fold CV R² | 0.64 |
+| Combined package scrap reduction | 4.44% → ~3.85% (−13% relative) |
 | Cycle-time cost of package | +1.0% (~0.6 s) |
 | Energy cost of package | negligible |
 
@@ -51,11 +51,11 @@ Five coordinated actions, all on existing equipment:
 
 | Action | Specification | Est. Δ Scrap | Confidence |
 |---|---|---|---|
-| Extend cooling time | +1.5 s plant-wide | −0.39 p.p. | **High** |
-| Cap mold temperature | ≤ 78 °C | −0.14 p.p. | Med–High |
+| Extend cooling time | +1.5 s plant-wide | −0.44 p.p. | **High** |
+| Cap mold temperature | ≤ 78 °C | −0.21 p.p. | Med–High |
 | Lower dryer dewpoint | −5 °C when humidity ≥ 65% | −0.09 p.p. | Medium |
-| Reduce injection pressure | −30 bar when wear index ≥ 0.45 | −0.07 p.p. | Medium |
-| Tighten maintenance interval | Cap at 14 days | −0.02 p.p. | Medium |
+| Reduce injection pressure | −30 bar when wear index ≥ 0.45 | −0.09 p.p. | Medium |
+| Tighten maintenance interval | Cap at 14 days | −0.07 p.p. | Medium |
 
 All estimates are model-implied from observational data under the stated DAG assumptions. A two-week pilot at **VN_QUANGNAM** is recommended before plant-wide deployment.
 
